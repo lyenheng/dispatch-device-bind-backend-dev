@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.kedacom.avcs.dispatch.device.bind</groupId>
+    <artifactId>dispatch-device-bind</artifactId>
+    <packaging>pom</packaging>
+    <version>1.0.0</version>
+    <modules>
+        <module>dispatch-device-bind-index</module>
+        <module>dispatch-device-bind-data</module>
+        <module>dispatch-device-bind-web</module>
+        <module>dispatch-device-bind-client</module>
+    </modules>
+
+    <parent>
+        <groupId>com.kedacom.dispatch</groupId>
+        <artifactId>dispatch-framework-parent</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+
+    <developers>
+        <developer>
+            <name>liuyue</name>
+            <email>liuyue_yq@kedacom.com</email>
+            <roles>
+                <role>developer</role>
+            </roles>
+            <timezone>+8</timezone>
+        </developer>
+    </developers>
+
+    <properties>
+        <rbac.version>2.6.2.4</rbac.version>
+        <cloud.starter.loadbalance>2.2.9.RELEASE</cloud.starter.loadbalance>
+        <dispatch.common.version>2.0.0-SNAPSHOT</dispatch.common.version>
+    </properties>
+
+    <scm>
+        <connection>scm:git:https://szgitlab.kedacom.com/disipatch-module/dispatch-device-bind/dispatch-device-bind-backend.git</connection>
+        <developerConnection>scm:https://szgitlab.kedacom.com/disipatch-module/dispatch-device-bind/dispatch-device-bind-backend.git</developerConnection>
+        <url>https://szgitlab.kedacom.com/disipatch-module/dispatch-device-bind/dispatch-device-bind-backend</url>
+        <tag>v${project.version}</tag>
+    </scm>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-starter-loadbalancer</artifactId>
+                <version>${cloud.starter.loadbalance}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.kedacom.dispatch.common</groupId>
+                <artifactId>dispatch-common-dependencies</artifactId>
+                <version>${dispatch.common.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+
+        <testSourceDirectory>src/test/java</testSourceDirectory>
+
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+            </testResource>
+        </testResources>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+
+    </build>
+
+    <repositories>
+        <repository>
+            <id>ctsp</id>
+            <name>ctsp</name>
+            <url>http://nexus.kedacom.com/content/groups/public/</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+
+        <repository>
+            <id>alibab</id>
+            <name>alibaba</name>
+            <url>http://maven.aliyun.com/nexus/content/groups/public/</url>
+        </repository>
+        <repository>
+            <id>yuanqu-release</id>
+            <name>yuanqu</name>
+            <url>http://nexus.kedacom.com/content/repositories/yuanqu-release/</url>
+        </repository>
+        <repository>
+            <id>yuanqu-snapshot</id>
+            <name>yuanqu</name>
+            <url>http://nexus.kedacom.com/content/repositories/yuanqu-snapshot/</url>
+        </repository>
+    </repositories>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>kedacom</id>
+            <url>http://nexus.kedacom.com/content/repositories/yuanqu-snapshot/</url>
+        </snapshotRepository>
+        <repository>
+            <id>kedacom-release</id>
+            <url>http://nexus.kedacom.com/content/repositories/yuanqu-release/</url>
+        </repository>
+    </distributionManagement>
+
+    <profiles>
+        <profile>
+            <id>dev</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <profiles.active>dev</profiles.active>
+            </properties>
+        </profile>
+        <profile>
+            <id>test</id>
+            <properties>
+                <profiles.active>test</profiles.active>
+            </properties>
+        </profile>
+        <profile>
+            <id>uat</id>
+            <properties>
+                <profiles.active>uat</profiles.active>
+            </properties>
+        </profile>
+        <profile>
+            <id>prod</id>
+            <properties>
+                <profiles.active>prod</profiles.active>
+            </properties>
+        </profile>
+    </profiles>
+</project>

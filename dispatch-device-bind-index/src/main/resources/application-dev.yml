@@ -1,0 +1,472 @@
+server:
+  port: 8093
+
+spring:
+  datasource:
+    url: jdbc:mysql://192.168.9.249:3306/avcs2_dev_test?useUnicode=true&characterEncoding=utf-8&serverTimezone=UTC&useSSL=false
+    username: root
+    password: m4R4YWn40QduqEKd
+    druid:
+      test-on-borrow: false
+      test-while-idle: true
+      test-on-return: false
+      validation-query: select 'x'
+  data:
+        mongodb:
+          database: msfe
+          host: 127.0.0.1
+          username: root
+          password: '123456'
+  redis:
+    database: 2
+    host: 192.168.9.249
+    port: 6379
+    password:
+  activemq:
+    broker-url: failover:(tcp://192.168.7.156:61616)
+    pool:
+      enabled: true
+    user: admin
+    password: 123456
+  jms:
+    pub-sub-domain: true
+  #kafka默认配置
+  kafka:
+    bootstrap-servers: 10.65.3.17:29092
+    consumer:
+      group-id: cdevice-manage-dispatch-avcs-dev1
+      enable-auto-commit: true
+      auto-offset-reset: earliest
+    # kafka多数据源配置，统一设备的kafka
+    secondary:
+      timeElapsed: false
+      batch-listeners:
+        - deviceclient
+      servers:
+        deviceclient: #设备权限kafka监听ra-role-notify,device-notify
+          consumer:
+            max-poll-records: 1000
+            fetch-min-size: 1024000 #bytes
+            fetch-max-wait: 300000
+            group-id: cdevice-manage-avcs-new-dev
+            enable-auto-commit: true
+            auto-offset-reset: earliest
+          bootstrap-servers: 10.65.3.30:19092
+        avcs: #融合通信内部使用kafka
+          consumer:
+            max-poll-records: 1000
+            fetch-max-wait: 500
+            fetch-min-size: 3500
+            group-id: avcs-new-dev
+            enable-auto-commit: true
+            auto-offset-reset: earliest
+          bootstrap-servers: 10.68.16.54:9092
+        ctserver: #ctsrever使用kafka
+          consumer:
+            group-id: cts
+            enable-auto-commit: true
+            auto-offset-reset: earliest
+            topic: kedamap-ct-data-connector-batch
+            single-topic: kedamap-ct-data-connector
+          bootstrap-servers: 10.65.3.30:19092
+      startup-policy: async #项目启动结束后进行kafka的监听
+  resources:
+    static-locations: file:/data/share/avcs2/audio
+  mvc:
+    static-path-pattern: /upload/audio/**
+  main:
+    allow-bean-definition-overriding: true
+
+#统一权限验证
+commons.oauth2.client:
+  client_id: ty-dispatch-back #标识
+  clientSecret: c0yLFq  #密钥
+  grantType: password
+  serverUri: https://rbac.devdolphin.com/cloud-rbac   # 服务端Server外网地址
+  serverInUri: https://rbac.devdolphin.com   # 服务端Server内网地址(为了解决内网中调用不能用域名访问的问题)
+  clientUri: https://dolphin-dev.kedacom.com/avcs2   #客户端地址
+  serverName: cloud-rbac
+  jwtEnable: true #开启token 认证
+  kickSession: false #开启踢人
+  # 项目超管/部门管理员
+  username: avcs_dep_admin         #调用统一权限api使用
+  password: keda123#
+
+kedacom.openapi:
+  adc:
+    serverUri: http://192.168.9.208:9094/ra #设备权限地址
+  device.notify:
+    #监听大屏开窗信息
+    avcsOpenWindowTopics: AVCS_OPEN_WINDOW_INFO
+    #监听新媒体设备状态
+    avcsDeviceStatusNotify: ${keda.services.media.callbackTopic}
+    #广播: 其他组件发送消息，广播源消费
+    avcsDispatchControlBroadcastTopic: avcs_dispatch_control_broadcast_topic
+    #广播：广播源发送消息，其他组件消费
+    avcsDispatchControlBroadcastSendTopic: avcs_dispatch_control_broadcast_send_topic
+    #本地监看（监看组件数据发送此topic，由控制模块监听）
+    avcsDispatchControlMonitorSendTopic: avcs_dispatch_control_monitor_send_topic
+    #本地监看接收数据topic
+    avcsDispatchControlMonitorReceiveTopic: avcs_dispatch_control_monitor_receive_topic
+    #webScoketTopic
+    avcsDispatchWebsocketTopic: AVCS_WEBSOCKET2
+    #调度列表topic
+    avcsDispatchControlListTopics: ${avcs.dispatch.controllist.topics}
+    #调度列表收topic
+    avcsDispatchListReceiveTopics: avcs_dispatch_list_receive_topic
+    #业务屏发送（业务屏组建数据发送此topic，由控制模块监听）
+    avcsDispatchControlBusinessTopics: avcs_dispatch_control_business_topic
+    #业务屏接收（控制模块将其他模块数据推入此topic，由业务屏监听）
+    avcsDispatchControlBusinessReceiveTopics: avcs_dispatch_control_business_receive_topic
+    #业务屏点名数据发送（业务屏组建数据发送此topic，由控制模块监听）
+    avcsDispatchControlBusinessRollCallTopics: avcs_dispatch_control_business_roll_call_topic
+    #大屏发送
+    avcsTvWallControlSendTopic: avcs_tv_wall_control_send_topic
+    #大屏发送通道广播
+    avcsTvWallChannelBroadcastTopic: avcs_tv_wall_channel_broadcast_topic
+    #大屏接收
+    avcsTvWallControlReceiveTopic: avcs_tv_wall_control_receive_topic
+    #大屏
+    avcsDisplayControlReceiveTopic: avcs_display_control_receive_topic
+    #点名人和被点名人状态的变化
+    avcsMpControlDynamicDeviceTopic: DYNAMIC_DEVICE_TOPIC
+
+com.kedacom.avcs:
+  component.model: event # kafka：表示启用kafka模式，event：表示使用springEvent事件
+  consumer.includeTopic:
+    # listenerTopic：每个组件可以增加自己需要监听的topic，list方式配置
+    # operateType 与 listenerTopic成对出现，1：表示增加2：表示修改，3：表示删除。配置多个以“，”分割
+    # groupId：自定义groupId
+    listConsumer: #调度列表模块
+      - groupId: listConsumerId
+      - listenerTopic: ${keda.services.media.callbackTopic}
+        operateType:
+      - listenerTopic: ${kedacom.openapi.device.notify.avcsDispatchListReceiveTopics}
+        operateType:
+    businessConsumer: #业务屏模块
+      - groupId: businessConsumerId
+      - listenerTopic: ${keda.services.media.callbackTopic}
+        operateType:
+      - listenerTopic: ${kedacom.openapi.device.notify.avcsDispatchControlBusinessReceiveTopics}
+        operateType:
+    monitorConsumer: #监看模块
+      - groupId: monitorConsumerId
+      - listenerTopic: ${keda.services.media.callbackTopic}
+        operateType:
+    broadcastConsumer: #广播源模块
+      - groupId: broadcastConsumerId
+      - listenerTopic: ${keda.services.media.callbackTopic}
+        operateType:
+      - listenerTopic: ${kedacom.openapi.device.notify.avcsDispatchControlBroadcastTopic}
+        operateType:
+    tvWallConsumer: #大屏模块
+      - groupId: tvWallConsumerId
+      - listenerTopic: ${keda.services.media.callbackTopic}
+        operateType:
+    callConsumer: #呼叫组件模块
+      - groupId: callConsumerId
+      - listenerTopic:  ${keda.services.media.callbackTopic}
+        operateType:
+    webSocketConsumer: #websocket模块
+      - groupId: webSocketConsumerId #webSocketConsumer 需要去动态生成groupId应该多实例
+      - listenerTopic: ${kedacom.openapi.device.notify.avcsDispatchWebsocketTopic}
+        operateType:
+    meetPlanControlConsumer: #预案控制模块
+      - groupId: meetPlanControlConsumerId
+      - listenerTopic: ${kedacom.openapi.device.notify.avcsDispatchControlBusinessTopics}
+        operateType:
+      - listenerTopic: ${kedacom.openapi.device.notify.avcsDispatchControlBroadcastSendTopic}
+        operateType:
+      - listenerTopic: ${kedacom.openapi.device.notify.avcsDispatchControlListTopics}
+        operateType:
+      - listenerTopic: ${kedacom.openapi.device.notify.avcsTvWallChannelBroadcastTopic}
+        operateType:
+
+feign:
+  hystrix:
+    enabled: true
+
+# feignclient 熔断机制，不需要修改
+hystrix:
+  threadpool:
+    default:
+      coreSize: 5
+      maxQueueSize: 50 #BlockingQueue的最大队列数，默认值-1
+      queueSizeRejectionThreshold: 50 #queueSizeRejectionThreshold该值后，请求也会被拒绝，默认值5
+  command:
+    default:  #default全局有效，service id指定应用有效
+      execution:
+        timeout:
+          #是否开启超时熔断
+          enabled: true
+        isolation:
+          thread:
+            timeoutInMilliseconds: 8000
+#          strategy: SEMAPHORE
+
+# 设定 flyway 属性
+flyway:
+  # 启用或禁用 flyway
+  enabled: true
+  # flyway 的 clean 命令会删除指定 schema 下的所有 table, 杀伤力太大了, 应该禁掉.
+  cleanDisabled: true
+  # 设定 SQL 脚本的目录,多个路径使用逗号分隔, 比如取值为 classpath:db/migration,filesystem:/sql-migrations
+  locations: classpath:db/migration
+  # 如果指定 schema 包含了其他表,但没有 flyway schema history 表的话, 在执行 flyway migrate 命令之前, 必须先执行 flyway baseline 命令.
+  # 设置 spring.flyway.baseline-on-migrate 为 true 后, flyway 将在需要 baseline 的时候, 自动执行一次 baseline.
+  baselineOnMigrate: true
+  # Encoding of SQL migrations (default: UTF-8)
+  encoding: UTF-8
+  # 设定 flyway 的 metadata 表名, 缺省为 flyway_schema_history
+  # 开发环境最好开启 outOfOrder, 生产环境关闭 outOfOrder .
+  outOfOrder: false
+  # 需要 flyway 管控的 schema list, 缺省的话, 使用的时 dbsource.connection直连上的那个 schema, 可以指定多个schema, 但仅会在第一个schema下建立 metadata 表, 也仅在第一个schema应用migration sql 脚本. 但flyway Clean 命令会依次在这些schema下都执行一遍.
+  #spring.flyway.schemas:
+
+keda.services:
+  #新媒体服务
+  media:
+    serverUri: http://192.168.7.174:8085 #新媒体服务地址
+    timeOut: 5500
+    isSkip: true
+    test.all.success: false
+    pictureSynthesis: true # 新媒体画面合成
+    callbackTopic: AVCS_DEVICE_STATUS_NOTIFY_2 #新媒体状态通知
+    groupNotifyTopic: AVCS_GROUP_NOTIFY
+    speakActionNotifyTopic: AVCS_SPEAKACTION_NOTIFY
+    callbackUrl: http://192.168.9.128:8090/callback/notifyDeviceStatus
+    selfMediaEnable: true # MT等设备是否在入会时设置自身为媒体源
+    reuseGroup: true #复用全部监看设备调度组
+    forcedDismantle: true #是否使用强拆, 当值为true时，reuseGroup配置不起作用，始终为false
+    maxDeviceNum: 200 #新媒体控制模块支持最大设备数量
+    delayTime: 200 #设备回调延时处理时间
+    testPTT: true #350M对讲机使用监控资源池测试
+    pttSourcePool: 32050001031121006661,31010600001320000146,32050001031121006666,31010600001320000181,31010600001320000158,31010600001320000137,31010600001320000152,31010600001320000161
+    record.serverUri: http://192.168.9.249:19020
+    recordManage.serverUri: http://192.168.9.249:8080
+    record.isSkip: false
+    recIdTest: RecId00C58AA18E37954
+    pttOnDutyTime: 30000 #显控服务
+    vlineServerUri: https://dispatch.testdolphin.com:59443
+    downloadUrl: https://dispatch.testdolphin.com:59443/vline/file/download?url=
+    secretChat:
+      subscriber: mtapi01
+    maptask:
+      callbackUrl: http://192.168.8.164:8090/map/task/callback/taskNotify #地图屏任务回调地址
+  displaycontrol:
+    tokenRedisKey: displayControlTokenKey
+    serverUri: http://dolphin-dev.kedacom.com:38703
+    timeout: 5500
+    username: admin
+    password: admin
+    is4Test: false
+    justTest: true
+    keepAliveTime: 1200000 #保活时间20分钟
+    callbackUrl: https://10.68.16.54:9447/displayServer/process_callback #显控服务回调地址IP:PORT
+    callbackUrlDomain: #显控服务回调地址 海豚域名+/displayServer/process_callback
+  #语音网关，动态重组使用
+  audio:
+    isSkip: true
+    serverUri: http://10.65.5.237:9900
+    localId: keda
+    device.max: 100
+    device.min: 2
+  avcs.group: #调度组管理配置
+    enable: true  #true为调度组记录
+    serverUri: http://dolphin-dev.kedacom.com/dispatch-micoservice #融合调度轻服务地址
+
+ms.user.roles:
+  microServiceAdmin: ${dispatch.common.rbac.auth.superAdminRoleSign}  #调度组管理超级管理员
+
+dispatch.common:
+  rbac:
+    auth:
+      superAdminRoleSign: avcs_role2_super_admin # 音视频超级管理员标识
+      menuSign: avcs_menu
+      online:
+        enabled: true
+        topic: AVCS_COMMON_ONLINE_STATUS
+        expireIn: 60
+    dept:
+      showOwnDept: false
+      defaultSize: 100  # 部门默认分页大小
+  cdevice.url: http://192.168.9.208:9093/cdevice-manage # 统一设备地址
+  #  cdevice.url: http://192.168.7.42/cdevice-manage # 统一设备地址
+  kdall.url: http://dolphin-dev.kedacom.com/kdall  # 一机一档
+  adc:
+    device-max-size: 200
+  contact:
+    url: http://dolphin-dev.kedacom.com/kaas-server/open-api  # 通讯录
+    clientId: tyDispatchBack
+    clientSecret: s5ba45
+
+avcs:
+  # 权限管理模块
+  access:
+    # 超级管理员角色标示
+    superAdmin.sign: "avcs_role2_super_admin"
+    redisTimeOut:
+      # 权限控制模块-会场redis缓存过期时间，单位：秒
+      meetRoom: 600
+      # 权限控制模块-预案redis缓存过期时间，单位：秒
+      meetPlan: 660
+      # 权限控制模块-大屏redis缓存过期时间，单位：秒
+      bigScreen: 540
+      # 权限控制模块-静态资源redis缓存过期时间，单位：秒
+      staticResource: 480
+    #资源类型标识
+    resource.type: "{'error': 0, 'number': 4, 'resourceTypes': [{'value': 'H', 'label': '会场'},{'value': 'Y', 'label': '预案'},{'value': 'D', 'label': '大屏'},{'value': 'J', 'label': '静态资源'}]}"
+    #权限标识
+    auth.type: "{'error': 0, 'number': 3, 'authTypes': [{'value': 'R', 'label': '查看'},{'value': 'U', 'label': '修改'},{'value': 'D', 'label': '删除'}]}"
+    #权限标识
+    allAuth.type: "{'error': 0, 'number': 4, 'authTypes': [{'value': 'R', 'label': '查看'},{'value': 'U', 'label': '修改'},{'value': 'D', 'label': '删除'},{'value': 'M', 'label': '配置'}]}"
+  # 新媒体控制模块配置
+  dispatch:
+    component.newMediaControl:
+      enableDeviceAbility: true # 是否开启设备能力：true(缺省值)或false
+      memberIdType: deviceId # 传入成员id类型：deviceId(缺省值)或gbId
+      mobilePrefix: #呼叫手机前缀
+      telPrefix: #呼叫固话前缀
+    controllist.topics: "avcs_dispatch_list_send_topic" #调度列表topic
+    common.data.file:
+      enabled: true
+      strategy: hd   # hd-硬盘 db-数据库 不推荐db，需要改数据库参数
+      basePath: /data/private/avcs2 # 文件存储地址
+    log:
+      strategy: file  # 是否开启日志 closed:关闭 / es / file:记录在业务日志中，打印在控制台
+      es:
+        host: 10.68.16.54
+        port: 9200  # http端口
+        indexName: avcs2_app_log  # 索引名
+    socket:
+      kafka.enable: false #websocket是否走 kafka，默认不发kafka
+    es:
+      enable: true
+      host: 192.168.9.249
+      port: 9200  # http端口
+    business:
+      heightLightAudio: 5 # 业务屏窗口高亮音量等级，超过即高亮
+  mpControl:
+    bro:
+      defaultBizScreen: false #业务屏是否广播，默认不广播业务屏
+    lodMeetplan:
+      module: MEETLIST,BIZSCREEN,BROADCAST,TV_WALL,MONITOR_CTRL,PLAYSCREEN  #预案加载成功所需模块
+      easyModule: MEETLIST,BIZSCREEN,BROADCAST,MONITOR_CTRL #一键点调预案加载成功所需模块
+    # quartz配置
+  quartz:
+    enabled: true
+    properties:
+      org.quartz:
+        scheduler:
+          instanceName: avcsQuartzScheduler
+          idleWaitTime: 10000
+          instanceId: AUTO
+        jobStore:
+          isClustered: true
+          class: org.quartz.impl.jdbcjobstore.JobStoreTX
+
+dispatch.component.name: "dispatch-controller-list" #调度列表模块redis的前缀
+
+adc:
+  #同步ctserver相关配置
+  synCTServer:
+    main.switch: true  #CTServer总开关，默认true
+    appName: avcs #发送CTServer时的appName
+    serviceName: avcs2_devcloud #发送CTServer时的serviceName
+    includeProps: #发送到ctserver的属性，目前可以不用配置，如deviceType
+    wordSegmentationProps: #属性分词搜索，如name
+    num: 100 #发送CTServer时单条Kafka消息所包含的设备数。CT-Server最大支持2000，Kafka消息体最大1M。实际测试，配置500时，大约为600KB。根据项目情况进行配置，建议配置500。默认500
+    publicSpace.enable: true #是否启用关联公有空间开关
+
+#告警模块
+com.kedacom.avcs.dispatch.aralm:
+  enable: false #false表示关闭监听告警消息
+  topic: calarm_message_receiver # 接收的topic
+  serverUri: http://dolphin-dev.kedacom.com/calarm-server #告警的服务
+  filter: false #根据部门code过滤告警信息，false：默认值不过滤
+
+#组会组件配置
+kedacom:
+  avcs:
+    dispatch:
+      conference:
+        pictureSynthesis: true #是否开启画面合成
+        jobFlag: true #保活job开关
+        jobTime: 30 #保活时长(秒)
+        jobSchedule: 5000 #保活job执行时间，默认5000毫秒
+        kChatUseRbac: false #视信通账号转换是否走统一权限
+
+# 录像接口
+keda.services.record:
+  enable: true
+  # 录像管理uri（获取录像）
+  serverUri: http://192.168.7.174:8080
+  isSkip: false
+  # 录像uri（开启、更新、结束）
+  serverUri2: http://192.168.7.174:19020
+  account_token: test
+  valid_day: 30
+
+# 可视化控制模块配置
+avcs.dispatch.controller:
+  vView:
+    dhvServiceUrl: https://dolphin-dev.kedacom.com/ty-uvisual # 可视化后端服务地址
+    projectMarker: zxqDXDDz # 融合调度在可视化中的项目标识
+
+#消息推送模块
+com.kedacom.avcs.dispatch.sms:
+  serverUri: http://bestkunlun.com/ga-pc-msg-notice #消息推送的服务
+  enable: false #是否发送真实短信，false不发送，true：发送
+  templateId: b2021472-0198-4890-9ee4-f5eb8b478b15
+  # 权限验证登录账号。
+  appId: ogyaUviLvAmyKPxt
+  appSecret: 948b0032a891c9df6a5f49a995bdd559ca88d231
+  #消息推送模块
+  es:
+    enable: true
+    indexName: avcs2_sms_dev_history
+    host: 10.68.16.54
+    port: 39200  # http端口
+
+# 音频文件上传地址
+avcs.dispatch.audio.record:
+  basePath: /data/share/avcs2/audio # 文件存储地址
+  virtualPath:
+    # 文件存储地址映射到http地址, 内部使用
+    innerUrl: https://dolphin-dev.kedacom.com/avcs2/upload/audio
+    # 文件存储地址映射到http地址， 外部使用，如流媒体
+    externalUrl: http://dolphin-dev.kedacom.com/avcs2/upload/audio
+# spring.resources.static-locations: file:/data/private/avcs2/audio #springmvc文件映射
+
+
+#平台级联
+platform:
+  enabled: true
+  platformName: 融合调度1            #当前平台名称
+  platformUrl: http://192.168.9.208:8094/avcs2    #当前平台地址
+  channelNumber: 9
+  channelName: 频道
+  mediaScheduleAddr: http://192.168.7.156:8085
+  nMediaId: 156
+
+dispatch.fax:
+  topics: "DISPATCH_FAX_NOTIFY"
+  scooper:
+    url: http://localhost:8090
+    username: 111
+    password: 111
+    heartbeat.interval: 15000
+  path: /avcs2
+  name: ao
+  ftp:
+    username: keda
+    password: cccccc
+    host: 192.168.9.179
+    port: 22
+    uploadPath: F:\
+
+hack:
+  aop:
+    enable: true #是否开启aop缓存,默认true
+    mode: file
+    file-write-path: C:\Users

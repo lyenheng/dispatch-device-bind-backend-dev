@@ -1,0 +1,58 @@
+server:
+  session:
+    # 单位(秒)
+    timeout: 800000000
+spring:
+  profiles:
+    active: dev
+    include: dispatchmessagecenter
+
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    type: com.alibaba.druid.pool.DruidDataSource
+
+  redis:
+    pool:
+      max-idle: 100
+      max-active: 100
+    timeout: 10000
+
+commons.authz.security:
+  permitAllUrl:
+    - "**"
+
+#跨域支持
+web.cors:
+  enabled: true
+  allowCredentials: true
+  allowedOrigins:
+    - '*'
+  allowedHeaders:
+    - '*'
+  allowedMethods:
+    - '*'
+
+
+#统一权限验证
+commons.oauth2.client:
+  client_id: ty-dispatch-back #标识
+  clientSecret: c0yLFq  #密钥
+  grantType: password
+  serverUri: https://rbac.devdolphin.com/cloud-rbac  # 服务端Server外网地址
+  serverInUri: https://rbac.devdolphin.com # 服务端Server内网地址(为了解决内网中调用不能用域名访问的问题)
+  clientUri: https://dolphin-dev.kedacom.com/avcs2   #客户端地址
+  serverName: cloud-rbac
+  jwtEnable: true #开启token 认证
+  kickSession: false #开启踢人
+  # 项目超管/部门管理员
+  username: avcs_dep_admin         #调用统一权限api使用
+  password: keda123#
+
+
+swagger:
+  base-package: com.kedacom.avcs.dispatch.device.bind
+
+
+feign:
+  hystrix:
+    enabled: true
